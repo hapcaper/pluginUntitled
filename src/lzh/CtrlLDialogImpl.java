@@ -10,7 +10,6 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Description:
  *
- * @author 李自豪（zihao.li01@ucarinc.com）
  * @since 2018/9/17
  */
 public class CtrlLDialogImpl extends CtrlLDialog {

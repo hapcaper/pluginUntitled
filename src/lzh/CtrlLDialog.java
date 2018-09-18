@@ -21,7 +21,6 @@ import java.util.regex.Pattern;
 /**
  * Description:
  *
- * @author 李自豪（zihao.li01@ucarinc.com）
  * @since 2018/9/17
  */
 public abstract class CtrlLDialog extends DialogWrapper {

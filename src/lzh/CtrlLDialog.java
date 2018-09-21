@@ -1,6 +1,7 @@
 package lzh;
 
 import com.intellij.openapi.application.ex.ApplicationManagerEx;
+import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.DialogWrapper;
 import com.intellij.openapi.util.text.StringUtil;
@@ -25,14 +26,21 @@ import java.util.regex.Pattern;
  */
 public abstract class CtrlLDialog extends DialogWrapper {
     private final Pattern myPattern = PatternUtil.compileSafe("\\s*(\\d+)?\\s*(?:[,:]?\\s*(\\d+)?)?\\s*", (Pattern)null);
-    private JTextField myField;
+    private final Pattern myPattern1 = PatternUtil.compileSafe("\\s*[.]?\\s*(0*)?([123456789]*)?\\s*[.]?\\s*", (Pattern)null);
+    private final Pattern myPattern2 = PatternUtil.compileSafe("\\s*[%]?\\s*(\\d+)?\\s*[%]?\\s*", (Pattern)null);
+	private Editor editor = null;
+	private JTextField myField;
     private JTextField myOffsetField;
 
     public CtrlLDialog(Project project) {
         super(project, true);
         this.setTitle("Super Go to Line/Column");
     }
-    
+	public CtrlLDialog(Project project,Editor editor) {
+		super(project, true);
+		this.editor = editor;
+		this.setTitle("Super Go to Line/Column");
+	}
     private static boolean isInternal() {
         return ApplicationManagerEx.getApplicationEx().isInternal();
     }
@@ -54,16 +62,35 @@ public abstract class CtrlLDialog extends DialogWrapper {
     @Nullable
     protected final CtrlLDialog.Coordinates getCoordinates() {
         Matcher m = this.myPattern.matcher(this.getText());
-        if (!m.matches()) {
+	    Matcher m1 = this.myPattern1.matcher(this.getText());
+	    Matcher m2 = this.myPattern2.matcher(this.getText());
+
+        if (!m.matches()&&!m1.matches()) {
             return null;
+        } else if (m.matches()) {
+	        int l = StringUtil.parseInt(m.group(1), this.getLine() + 1);
+	        int c = StringUtil.parseInt(m.group(2), -1);
+	        return l > 0 ? new CtrlLDialog.Coordinates(l - 1, Math.max(0, c - 1)) : null;
+        } else if (m1.matches()) {
+	        String oStr = m1.group(1);
+	        String num = m1.group(2);
+	        String percentStr = "0." + oStr + num;
+	        double percent = StringUtil.parseDouble(percentStr, this.getPercent());
+	        int l = (int) (percent * editor.getDocument().getLineCount());
+	        return l > 0 ? new CtrlLDialog.Coordinates(l - 1, 0) : null;
+        } else if (m2.matches()) {
+	        String numStr = m1.group(1);
+	        double percent = Double.parseDouble(numStr)/100;
+	        int l = (int) (percent * editor.getDocument().getLineCount());
+	        return l > 0 ? new CtrlLDialog.Coordinates(l - 1, 0) : null;
         } else {
-            int l = StringUtil.parseInt(m.group(1), this.getLine() + 1);
-            int c = StringUtil.parseInt(m.group(2), -1);
-            return l > 0 ? new CtrlLDialog.Coordinates(l - 1, Math.max(0, c - 1)) : null;
+	        return null;
         }
     }
 
-    protected abstract int getLine();
+	protected abstract double getPercent();
+
+	protected abstract int getLine();
 
     protected abstract int getColumn();
 
@@ -76,6 +103,7 @@ public abstract class CtrlLDialog extends DialogWrapper {
     @NotNull
     protected abstract CtrlLDialog.Coordinates offsetToCoordinates(int var1);
 
+    @Override
     protected JComponent createNorthPanel() {
         JPanel panel = new JPanel(new GridBagLayout());
         GridBagConstraints gbConstraints = new GridBagConstraints();

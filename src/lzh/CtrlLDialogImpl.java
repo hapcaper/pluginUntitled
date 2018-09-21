@@ -16,13 +16,20 @@ public class CtrlLDialogImpl extends CtrlLDialog {
     private final Editor myEditor;
 
     public CtrlLDialogImpl(Project project, Editor editor) {
-        super(project);
+        super(project,editor);
         this.myEditor = editor;
         this.init();
     }
 
+	@Override
+	protected double getPercent() {
+		double count = myEditor.getDocument().getLineCount();
+		double column = myEditor.getCaretModel().getLogicalPosition().column;
+		return column / count;
+	}
 
-    @Override
+
+	@Override
     protected void doOKAction() {
         CtrlLDialogImpl.Coordinates coordinates = this.getCoordinates();
         if (coordinates != null) {
